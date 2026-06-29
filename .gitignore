@@ -1,7 +1,6 @@
-@"
-__pycache__/
+﻿__pycache__/
 *.py[cod]
-*$py.class
+*.class
 
 # Blender backups
 *.blend1
@@ -12,4 +11,3 @@ __pycache__/
 .DS_Store
 Thumbs.db
 .vscode/
-"@ | Set-Content -Encoding UTF8 .gitignore
