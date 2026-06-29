@@ -1,0 +1,15 @@
+@"
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Blender backups
+*.blend1
+*.blend2
+*.blend@
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+"@ | Set-Content -Encoding UTF8 .gitignore
