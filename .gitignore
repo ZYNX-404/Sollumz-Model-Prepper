@@ -1,6 +1,6 @@
-﻿__pycache__/
+__pycache__/
 *.py[cod]
-*.class
+*$py.class
 
 # Blender backups
 *.blend1
