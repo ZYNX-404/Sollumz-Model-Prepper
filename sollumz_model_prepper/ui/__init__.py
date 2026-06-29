@@ -1,6 +1,15 @@
+import bpy
+
+from . import panel
+
+_classes = (panel.SMP_PT_main_panel,)
+
+
 def register():
-    pass
+    for cls in _classes:
+        bpy.utils.register_class(cls)
 
 
 def unregister():
-    pass
+    for cls in reversed(_classes):
+        bpy.utils.unregister_class(cls)
