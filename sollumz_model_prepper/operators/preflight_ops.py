@@ -1,4 +1,3 @@
-import bpy
 from bpy.types import Operator
 
 from .. import checks
@@ -9,7 +8,7 @@ class SMP_OT_RunPreflight(Operator):
     bl_idname = "smp.run_preflight"
     bl_label = "Run Preflight"
     bl_description = "Run preflight checks on selected mesh objects"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER'}
 
     @classmethod
     def poll(cls, context):
