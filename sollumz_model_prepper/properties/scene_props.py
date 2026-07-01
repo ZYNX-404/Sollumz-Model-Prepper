@@ -1,4 +1,4 @@
-from bpy.props import CollectionProperty, EnumProperty, FloatProperty, IntProperty, StringProperty
+from bpy.props import BoolProperty, CollectionProperty, EnumProperty, FloatProperty, IntProperty, StringProperty
 from bpy.types import PropertyGroup
 
 from .check_result import SMPCheckResult
@@ -25,4 +25,9 @@ class SMPSceneProperties(PropertyGroup):
         max=0.1,
         precision=5,
         step=1,
+    )
+    show_ok_results: BoolProperty(
+        name="Show OK Results",
+        description="Show OK preflight results in the result list",
+        default=True,
     )

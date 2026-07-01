@@ -54,21 +54,37 @@ class SMP_PT_main_panel(Panel):
 
         results = smp.check_results
         result_count = len(results)
+
+        error_count = sum(1 for r in results if r.status == "ERROR")
+        warn_count  = sum(1 for r in results if r.status == "WARN")
+        ok_count    = result_count - error_count - warn_count
+
         layout.label(text=f"Results: {result_count}")
+        row = layout.row()
+        row.label(text=f"Errors: {error_count}", icon="CANCEL")
+        row.label(text=f"Warnings: {warn_count}", icon="ERROR")
+        row.label(text=f"OK: {ok_count}", icon="CHECKMARK")
 
         if result_count == 0:
             return
 
         layout.separator()
+        layout.prop(smp, "show_ok_results")
+
+        visible = list(results) if smp.show_ok_results else [r for r in results if r.status != "OK"]
+        visible_count = len(visible)
+
+        if visible_count == 0:
+            layout.label(text="All results are OK.", icon="CHECKMARK")
+            return
+
         box = layout.box()
-        display_count = min(result_count, _MAX_RESULTS)
-        for i in range(display_count):
-            r = results[i]
+        for r in visible[:_MAX_RESULTS]:
             col = box.column(align=True)
             row = col.row()
             row.label(text=f"[{r.status}] {r.check_id}", icon=_SEVERITY_ICONS.get(r.status, "DOT"))
             row.label(text=r.fix_type)
             col.label(text=r.message)
 
-        if result_count > _MAX_RESULTS:
-            box.label(text=f"... and {result_count - _MAX_RESULTS} more result(s)")
+        if visible_count > _MAX_RESULTS:
+            box.label(text=f"... and {visible_count - _MAX_RESULTS} more result(s)")
