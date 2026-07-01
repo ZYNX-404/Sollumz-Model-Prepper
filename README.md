@@ -116,6 +116,29 @@ Current MVP does not execute any fixes.
 
 ---
 
+## Result Filtering
+
+The Preflight panel includes a result summary and display filter.
+
+The summary shows:
+
+* `Errors`
+* `Warnings`
+* `OK`
+
+These counts are based on all stored check results.
+
+The **Show OK Results** option controls only the visible result list:
+
+| Option   | Behavior                                                      |
+| -------- | ------------------------------------------------------------- |
+| Enabled  | Shows `OK`, `WARN`, and `ERROR` results.                      |
+| Disabled | Hides `OK` results and shows only `WARN` and `ERROR` results. |
+
+This is useful for large production assets where most checks pass but a small number of warnings need review.
+
+---
+
 ## Checks
 
 ### Transform Check
@@ -161,18 +184,30 @@ Checks for common mesh geometry issues.
 Detected issues:
 
 * Duplicate vertices
-* Non-manifold geometry
+* Open boundary edges
+* Complex non-manifold edges
 * Zero-area faces
 * Loose geometry
 
 Typical results:
 
-| Check                 | Severity | Fix Type          |
-| --------------------- | -------- | ----------------- |
-| Duplicate vertices    | `WARN`   | `SAFE_MANUAL`     |
-| Non-manifold geometry | `ERROR`  | `REVIEW_REQUIRED` |
-| Zero-area faces       | `WARN`   | `SAFE_MANUAL`     |
-| Loose geometry        | `WARN`   | `REVIEW_REQUIRED` |
+| Check                      | Severity | Fix Type          |
+| -------------------------- | -------- | ----------------- |
+| Duplicate vertices         | `WARN`   | `SAFE_MANUAL`     |
+| Open boundary edges        | `WARN`   | `REVIEW_REQUIRED` |
+| Complex non-manifold edges | `ERROR`  | `REVIEW_REQUIRED` |
+| Zero-area faces            | `WARN`   | `SAFE_MANUAL`     |
+| Loose geometry             | `WARN`   | `REVIEW_REQUIRED` |
+
+#### Open Boundary vs Complex Non-Manifold
+
+Open boundary edges are reported separately from complex non-manifold edges.
+
+Open boundary edges are edges connected to only one face.
+They are common in open props, thin surfaces, containers, shelves, interior meshes, and other game-ready assets. These are reported as `WARN` because they may be intentional.
+
+Complex non-manifold edges are edges connected to three or more faces.
+These are more likely to indicate broken topology and are reported as `ERROR`.
 
 This check is read-only and does not modify mesh data.
 
@@ -200,20 +235,31 @@ The current MVP does not create UV layers automatically.
 
 ---
 
-## MLO Collection Helper
+### Material Check
 
-The add-on includes a helper for creating a basic MLO collection structure.
+Checks whether mesh objects have usable material assignments and image textures.
 
-It creates or reuses:
+Detected issues:
 
-```text
-MLO_<name>
-├─ MLO_<name>_entities
-├─ MLO_<name>_collision
-└─ MLO_<name>_portals
-```
+* No material slots
+* Empty material slots
+* Empty material names
+* Materials without detected image textures
 
-Existing collections are not destroyed.
+Typical results:
+
+| Check                 | Severity | Fix Type          |
+| --------------------- | -------- | ----------------- |
+| No material slots     | `ERROR`  | `SAFE_MANUAL`     |
+| Empty material slots  | `WARN`   | `SAFE_MANUAL`     |
+| Empty material names  | `WARN`   | `SAFE_MANUAL`     |
+| Missing image texture | `WARN`   | `REVIEW_REQUIRED` |
+
+Image texture detection looks for Image Texture nodes with assigned images in node-based materials.
+
+Materials without detected image textures are reported as `WARN`, not `ERROR`, because procedural materials, custom shaders, or special material setups may be intentional.
+
+This check does not create materials, assign materials, create textures, or modify shader nodes.
 
 ---
 
