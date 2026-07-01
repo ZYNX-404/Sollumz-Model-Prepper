@@ -4,8 +4,13 @@ checks package — Preflight check functions.
 Each check function takes a bpy.types.Object and returns list[CheckResult].
 CHECK_FUNCTIONS is the canonical ordered list used by run_all_checks().
 
-T-009 (material_check) is not imported here yet; it will be added when that
-task is implemented.
+Registered checks (in order):
+  1. check_transform   — scale / rotation / location
+  2. check_normals     — custom normals presence
+  3. check_geometry    — duplicate verts, open boundary, complex non-manifold,
+                         zero area faces, loose geometry
+  4. check_uv          — UV map presence and validity
+  5. check_materials   — material slots, empty slots, names, image textures
 """
 
 from .result import CheckResult
@@ -13,13 +18,14 @@ from .transform_check import check_transform
 from .normal_check import check_normals
 from .geometry_check import check_geometry
 from .uv_check import check_uv
+from .material_check import check_materials
 
 CHECK_FUNCTIONS = [
     check_transform,
     check_normals,
     check_geometry,
     check_uv,
-    # check_material,   # T-009
+    check_materials,
 ]
 
 
