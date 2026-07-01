@@ -10,10 +10,11 @@ imported here yet; they will be added when those tasks are implemented.
 
 from .result import CheckResult
 from .transform_check import check_transform
+from .normal_check import check_normals
 
 CHECK_FUNCTIONS = [
     check_transform,
-    # check_normals,    # T-006
+    check_normals,
     # check_geometry,   # T-007
     # check_uv,         # T-008
 ]
