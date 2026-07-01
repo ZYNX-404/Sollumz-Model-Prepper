@@ -1,14 +1,19 @@
 """
-Geometry Check — T-007.
+Geometry Check — T-007 / T-007.1.
 
 Inspects mesh geometry using bmesh in read-only mode.
 No mesh modification, no bm.to_mesh(), no bpy.ops.mesh.*, no repair ops.
 
-Four sub-checks are performed:
-  A. Duplicate Vertices  — SAFE_MANUAL
-  B. Non-Manifold Geometry — REVIEW_REQUIRED
-  C. Zero Area Faces     — SAFE_MANUAL
-  D. Loose Geometry      — REVIEW_REQUIRED
+Five sub-checks are performed:
+  A. Duplicate Vertices       — SAFE_MANUAL
+  B. Open Boundary Edges      — REVIEW_REQUIRED  (link_faces == 1 → WARN)
+  C. Complex Non-Manifold     — REVIEW_REQUIRED  (link_faces >= 3 → ERROR)
+  D. Zero Area Faces          — SAFE_MANUAL
+  E. Loose Geometry           — REVIEW_REQUIRED  (link_faces == 0)
+
+T-007.1: non_manifold was split into open_boundary (WARN) and
+complex_non_manifold (ERROR) to avoid false positives on open props,
+thin surfaces, and interior meshes common in GTA/FiveM/MLO assets.
 
 Fix processing is Post-MVP.  This module only detects problems.
 """
@@ -38,7 +43,8 @@ def check_geometry(obj) -> list[CheckResult]:
 
         results = [
             _check_duplicate_verts(bm),
-            _check_non_manifold(bm),
+            _check_open_boundary(bm),
+            _check_complex_non_manifold(bm),
             _check_zero_area_faces(bm),
             _check_loose_geometry(bm),
         ]
@@ -74,32 +80,58 @@ def _check_duplicate_verts(bm) -> CheckResult:
     )
 
 
-def _check_non_manifold(bm) -> CheckResult:
-    non_manifold_edges = [e for e in bm.edges if not e.is_manifold]
-    non_manifold_verts = [v for v in bm.verts if not v.is_manifold]
-    edge_count = len(non_manifold_edges)
-    vert_count = len(non_manifold_verts)
-    nm_count = edge_count + vert_count
+def _check_open_boundary(bm) -> CheckResult:
+    count = sum(1 for e in bm.edges if len(e.link_faces) == 1)
 
-    if nm_count:
+    if count:
         return CheckResult(
-            check_id="non_manifold",
-            check_name="Non-Manifold Geometry",
-            status="ERROR",
+            check_id="open_boundary",
+            check_name="Open Boundary Edges",
+            status="WARN",
             message=(
-                f"{edge_count} non-manifold edge(s), {vert_count} non-manifold vert(s). "
-                "Manual review required."
+                f"{count} open boundary edge(s) found. "
+                "This may be intentional for open props, thin surfaces, or interior meshes "
+                "— review manually."
             ),
             fix_type="REVIEW_REQUIRED",
-            detail_count=nm_count,
+            detail_count=count,
         )
 
     return CheckResult(
-        check_id="non_manifold",
-        check_name="Manifold",
+        check_id="open_boundary",
+        check_name="Open Boundary Edges",
         status="OK",
-        message="Mesh is manifold.",
+        message="No open boundary edges.",
+        fix_type="NONE",
+        detail_count=0,
     )
+
+
+def _check_complex_non_manifold(bm) -> CheckResult:
+    count = sum(1 for e in bm.edges if len(e.link_faces) >= 3)
+
+    if count:
+        return CheckResult(
+            check_id="complex_non_manifold",
+            check_name="Complex Non-Manifold",
+            status="ERROR",
+            message=(
+                f"{count} complex non-manifold edge(s) found. "
+                "Edges connected to 3 or more faces require manual review."
+            ),
+            fix_type="REVIEW_REQUIRED",
+            detail_count=count,
+        )
+
+    return CheckResult(
+        check_id="complex_non_manifold",
+        check_name="Complex Non-Manifold",
+        status="OK",
+        message="No complex non-manifold edges.",
+        fix_type="NONE",
+        detail_count=0,
+    )
+
 
 
 def _check_zero_area_faces(bm) -> CheckResult:
