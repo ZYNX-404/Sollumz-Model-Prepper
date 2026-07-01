@@ -65,26 +65,28 @@ class SMP_PT_main_panel(Panel):
         row.label(text=f"Warnings: {warn_count}", icon="ERROR")
         row.label(text=f"OK: {ok_count}", icon="CHECKMARK")
 
-        if result_count == 0:
-            return
+        if result_count > 0:
+            layout.separator()
+            layout.prop(smp, "show_ok_results")
+
+            visible = list(results) if smp.show_ok_results else [r for r in results if r.status != "OK"]
+            visible_count = len(visible)
+
+            if visible_count == 0:
+                layout.label(text="All results are OK.", icon="CHECKMARK")
+            else:
+                box = layout.box()
+                for r in visible[:_MAX_RESULTS]:
+                    col = box.column(align=True)
+                    row = col.row()
+                    row.label(text=f"[{r.status}] {r.check_id}", icon=_SEVERITY_ICONS.get(r.status, "DOT"))
+                    row.label(text=r.fix_type)
+                    col.label(text=r.message)
+
+                if visible_count > _MAX_RESULTS:
+                    box.label(text=f"... and {visible_count - _MAX_RESULTS} more result(s)")
 
         layout.separator()
-        layout.prop(smp, "show_ok_results")
-
-        visible = list(results) if smp.show_ok_results else [r for r in results if r.status != "OK"]
-        visible_count = len(visible)
-
-        if visible_count == 0:
-            layout.label(text="All results are OK.", icon="CHECKMARK")
-            return
-
-        box = layout.box()
-        for r in visible[:_MAX_RESULTS]:
-            col = box.column(align=True)
-            row = col.row()
-            row.label(text=f"[{r.status}] {r.check_id}", icon=_SEVERITY_ICONS.get(r.status, "DOT"))
-            row.label(text=r.fix_type)
-            col.label(text=r.message)
-
-        if visible_count > _MAX_RESULTS:
-            box.label(text=f"... and {visible_count - _MAX_RESULTS} more result(s)")
+        review_box = layout.box()
+        review_box.label(text="Review Tools", icon="VIEWZOOM")
+        review_box.operator("smp.select_zero_area_faces", text="Select Zero Area Faces")

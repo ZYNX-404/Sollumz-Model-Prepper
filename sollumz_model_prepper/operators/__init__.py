@@ -2,10 +2,12 @@ import bpy
 
 from .collection_ops import SMP_OT_CreateMLOCollection
 from .preflight_ops import SMP_OT_RunPreflight
+from .review_ops import SMP_OT_SelectZeroAreaFaces
 
 _classes = (
     SMP_OT_CreateMLOCollection,
     SMP_OT_RunPreflight,
+    SMP_OT_SelectZeroAreaFaces,
 )
 
 
