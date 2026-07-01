@@ -21,13 +21,15 @@ Implemented:
 * Normal Check
 * Geometry Check
 * UV Check
+* Material Check
 * Run Preflight operator
 * Sidebar UI result display
+* Result severity summary
+* Show / hide OK results filter
 
 Not implemented yet:
 
 * Automatic fix execution
-* Material Check
 * Collision generation
 * Room / Portal authoring tools
 * Full Sollumz export automation
