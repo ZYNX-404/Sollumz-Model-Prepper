@@ -3,9 +3,12 @@ __pycache__/
 *$py.class
 
 # Blender backups
-*.blend1
-*.blend2
 *.blend@
+*.blend
+*.blend1
+
+# Addon
+*.zip
 
 # OS / editor
 .DS_Store
