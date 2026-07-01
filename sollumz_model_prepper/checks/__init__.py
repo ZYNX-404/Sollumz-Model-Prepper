@@ -4,18 +4,19 @@ checks package — Preflight check functions.
 Each check function takes a bpy.types.Object and returns list[CheckResult].
 CHECK_FUNCTIONS is the canonical ordered list used by run_all_checks().
 
-T-006 (normal_check), T-007 (geometry_check), T-008 (uv_check) are not
-imported here yet; they will be added when those tasks are implemented.
+T-008 (uv_check) is not imported here yet; it will be added when that task
+is implemented.
 """
 
 from .result import CheckResult
 from .transform_check import check_transform
 from .normal_check import check_normals
+from .geometry_check import check_geometry
 
 CHECK_FUNCTIONS = [
     check_transform,
     check_normals,
-    # check_geometry,   # T-007
+    check_geometry,
     # check_uv,         # T-008
 ]
 
