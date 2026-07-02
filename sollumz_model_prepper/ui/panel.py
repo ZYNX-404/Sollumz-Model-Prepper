@@ -89,15 +89,13 @@ class SMP_PT_main_panel(Panel):
                     else:
                         row.label(text=r.fix_type)
                     if object_name:
-                        col.label(text=f"[{object_name}] {r.message}")
-                        select_row = col.row()
-                        select_row.alignment = 'LEFT'
-                        op = select_row.operator(
+                        op = row.operator(
                             "smp.select_result_object",
-                            text="Select Object",
+                            text="",
                             icon="RESTRICT_SELECT_OFF",
                         )
                         op.object_name = object_name
+                        col.label(text=f"[{object_name}] {r.message}")
                     else:
                         col.label(text=r.message)
 
@@ -110,3 +108,5 @@ class SMP_PT_main_panel(Panel):
         review_box.operator("smp.select_zero_area_faces", text="Select Zero Area Faces")
         review_box.operator("smp.select_open_boundary_edges", text="Select Open Boundary Edges")
         review_box.operator("smp.select_complex_non_manifold_edges", text="Select Complex Non-Manifold Edges")
+        review_box.operator("smp.select_loose_geometry", text="Select Loose Geometry")
+        review_box.operator("smp.select_duplicate_vertices", text="Select Duplicate Vertices")

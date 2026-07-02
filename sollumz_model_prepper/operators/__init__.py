@@ -6,6 +6,8 @@ from .review_ops import (
     SMP_OT_SelectZeroAreaFaces,
     SMP_OT_SelectOpenBoundaryEdges,
     SMP_OT_SelectComplexNonManifoldEdges,
+    SMP_OT_SelectLooseGeometry,
+    SMP_OT_SelectDuplicateVertices,
 )
 from .result_ops import SMP_OT_SelectResultObject
 
@@ -15,6 +17,8 @@ _classes = (
     SMP_OT_SelectZeroAreaFaces,
     SMP_OT_SelectOpenBoundaryEdges,
     SMP_OT_SelectComplexNonManifoldEdges,
+    SMP_OT_SelectLooseGeometry,
+    SMP_OT_SelectDuplicateVertices,
     SMP_OT_SelectResultObject,
 )
 
