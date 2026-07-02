@@ -1,7 +1,7 @@
 bl_info = {
     "name": "Sollumz Model Prepper",
     "author": "ZYNX-404",
-    "version": (0, 1, 0),
+    "version": (0, 1, 1),
     "blender": (5, 1, 2),
     "category": "Object",
     "description": "Prepare models for Sollumz (GTA V / FiveM) export",
