@@ -90,3 +90,4 @@ class SMP_PT_main_panel(Panel):
         review_box = layout.box()
         review_box.label(text="Review Tools", icon="VIEWZOOM")
         review_box.operator("smp.select_zero_area_faces", text="Select Zero Area Faces")
+        review_box.operator("smp.select_open_boundary_edges", text="Select Open Boundary Edges")
