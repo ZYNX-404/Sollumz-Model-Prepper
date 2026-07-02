@@ -5,12 +5,17 @@ These operators change selection state and edit mode only.
 No mesh geometry, normals, UVs, or materials are modified.
 """
 
-import bmesh
 import bpy
 from bpy.types import Operator
 
-# Kept in sync with checks/geometry_check.py ZERO_AREA_THRESHOLD
-ZERO_AREA_THRESHOLD = 1e-8
+from ..checks.geometry_detection import (
+    find_zero_area_face_indices,
+    find_open_boundary_edge_indices,
+    find_complex_non_manifold_edge_indices,
+    find_loose_vertex_indices,
+    find_loose_edge_indices,
+    find_duplicate_vertex_indices,
+)
 
 
 class SMP_OT_SelectZeroAreaFaces(Operator):
@@ -40,8 +45,8 @@ class SMP_OT_SelectZeroAreaFaces(Operator):
         for poly in mesh.polygons:
             poly.select = False
 
-        # Select zero-area faces (threshold matches geometry_check.py)
-        zero_indices = [poly.index for poly in mesh.polygons if poly.area < ZERO_AREA_THRESHOLD]
+        # Shared detection — same condition as Preflight's zero_area_face check
+        zero_indices = find_zero_area_face_indices(mesh)
         for idx in zero_indices:
             mesh.polygons[idx].select = True
 
@@ -94,17 +99,9 @@ class SMP_OT_SelectOpenBoundaryEdges(Operator):
         for p in mesh.polygons:
             p.select = False
 
-        # Detect open boundary edges via bmesh (link_faces == 1)
-        # Condition kept in sync with geometry_check.py open_boundary judgement
-        bm = bmesh.new()
-        try:
-            bm.from_mesh(mesh)
-            bm.edges.ensure_lookup_table()
-            boundary_indices = [e.index for e in bm.edges if len(e.link_faces) == 1]
-        finally:
-            bm.free()
+        # Shared detection — same condition as Preflight's open_boundary check
+        boundary_indices = find_open_boundary_edge_indices(mesh)
 
-        # Apply selection to mesh edges (bmesh is freed; no bm.to_mesh() call)
         for idx in boundary_indices:
             mesh.edges[idx].select = True
 
@@ -155,17 +152,9 @@ class SMP_OT_SelectComplexNonManifoldEdges(Operator):
         for p in mesh.polygons:
             p.select = False
 
-        # Detect complex non-manifold edges via bmesh (link_faces >= 3)
-        # Condition kept in sync with geometry_check.py complex_non_manifold judgement
-        bm = bmesh.new()
-        try:
-            bm.from_mesh(mesh)
-            bm.edges.ensure_lookup_table()
-            complex_indices = [e.index for e in bm.edges if len(e.link_faces) >= 3]
-        finally:
-            bm.free()
+        # Shared detection — same condition as Preflight's complex_non_manifold check
+        complex_indices = find_complex_non_manifold_edge_indices(mesh)
 
-        # Apply selection to mesh edges (bmesh is freed; no bm.to_mesh() call)
         for idx in complex_indices:
             mesh.edges[idx].select = True
 
@@ -181,5 +170,116 @@ class SMP_OT_SelectComplexNonManifoldEdges(Operator):
             self.report({'INFO'}, f"{count} complex non-manifold edge(s) selected.")
         else:
             self.report({'INFO'}, "No complex non-manifold edges found.")
+
+        return {'FINISHED'}
+
+
+class SMP_OT_SelectLooseGeometry(Operator):
+    bl_idname = "smp.select_loose_geometry"
+    bl_label = "Select Loose Geometry"
+    bl_description = "Select loose vertices and edges on the active mesh object"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.object
+        return obj is not None and obj.type == 'MESH' and obj.data is not None
+
+    def execute(self, context):
+        obj = context.object
+        if obj is None or obj.type != 'MESH' or obj.data is None:
+            self.report({'WARNING'}, "No active mesh object.")
+            return {'CANCELLED'}
+
+        mesh = obj.data
+
+        # Switch to Object Mode so mesh data is accessible
+        if obj.mode != 'OBJECT':
+            bpy.ops.object.mode_set(mode='OBJECT')
+
+        # Deselect all verts/edges/faces
+        for v in mesh.vertices:
+            v.select = False
+        for e in mesh.edges:
+            e.select = False
+        for p in mesh.polygons:
+            p.select = False
+
+        # Shared detection — same conditions as Preflight's loose_geo check
+        loose_vert_indices = find_loose_vertex_indices(mesh)
+        loose_edge_indices = find_loose_edge_indices(mesh)
+
+        for idx in loose_vert_indices:
+            mesh.vertices[idx].select = True
+        for idx in loose_edge_indices:
+            mesh.edges[idx].select = True
+
+        mesh.update()
+
+        v_count = len(loose_vert_indices)
+        e_count = len(loose_edge_indices)
+
+        # Set Vertex+Edge select mode and enter Edit Mode
+        context.tool_settings.mesh_select_mode = (True, True, False)
+        bpy.ops.object.mode_set(mode='EDIT')
+
+        if v_count or e_count:
+            self.report({'INFO'}, f"Selected {v_count} loose vert(s) and {e_count} loose edge(s).")
+        else:
+            self.report({'INFO'}, "No loose geometry found.")
+
+        return {'FINISHED'}
+
+
+class SMP_OT_SelectDuplicateVertices(Operator):
+    bl_idname = "smp.select_duplicate_vertices"
+    bl_label = "Select Duplicate Vertices"
+    bl_description = "Select duplicate vertex candidates on the active mesh object"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.object
+        return obj is not None and obj.type == 'MESH' and obj.data is not None
+
+    def execute(self, context):
+        obj = context.object
+        if obj is None or obj.type != 'MESH' or obj.data is None:
+            self.report({'WARNING'}, "No active mesh object.")
+            return {'CANCELLED'}
+
+        mesh = obj.data
+
+        # Switch to Object Mode so mesh data is accessible
+        if obj.mode != 'OBJECT':
+            bpy.ops.object.mode_set(mode='OBJECT')
+
+        # Deselect all verts/edges/faces
+        for v in mesh.vertices:
+            v.select = False
+        for e in mesh.edges:
+            e.select = False
+        for p in mesh.polygons:
+            p.select = False
+
+        # Shared detection — same threshold as Preflight's dupe_vertex check.
+        # Detection only: no merge / weld / remove doubles is performed.
+        duplicate_indices = find_duplicate_vertex_indices(mesh)
+
+        for idx in duplicate_indices:
+            mesh.vertices[idx].select = True
+
+        mesh.update()
+
+        count = len(duplicate_indices)
+
+        # Set Vertex select mode and enter Edit Mode
+        context.tool_settings.mesh_select_mode = (True, False, False)
+        bpy.ops.object.mode_set(mode='EDIT')
+
+        if count:
+            self.report({'INFO'}, f"Selected {count} duplicate vertex candidate(s).")
+        else:
+            self.report({'INFO'}, "No duplicate vertices found.")
 
         return {'FINISHED'}
