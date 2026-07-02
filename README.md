@@ -41,7 +41,7 @@ Existing collections are never destroyed — if the hierarchy already exists, no
 | Normals   | Possibly inward / flipped normals (centroid heuristic)                                              |
 | Geometry  | Duplicate vertices, zero-area faces, loose geometry, open boundary edges, complex non-manifold edges, high vertex count |
 | UV        | Missing UV map, UVs outside the 0–1 range                                                           |
-| Materials | Missing material slots, empty material slots, empty material names, materials without image texture nodes |
+| Materials | Missing material slots, empty material slots, empty material names, materials without image texture nodes, non-power-of-two texture sizes |
 
 All checks are read-only. They never modify mesh data, normals, UVs, materials, or transforms.
 
@@ -159,12 +159,15 @@ The vertex count warning threshold is configurable per scene (**Vertex Count War
 
 | Check                 | Severity | Fix Type          |
 | --------------------- | -------- | ----------------- |
-| No material slots     | `ERROR`  | `SAFE_MANUAL`     |
-| Empty material slots  | `WARN`   | `SAFE_MANUAL`     |
-| Empty material names  | `WARN`   | `SAFE_MANUAL`     |
-| Missing image texture | `WARN`   | `REVIEW_REQUIRED` |
+| No material slots           | `ERROR`  | `SAFE_MANUAL`     |
+| Empty material slots        | `WARN`   | `SAFE_MANUAL`     |
+| Empty material names        | `WARN`   | `SAFE_MANUAL`     |
+| Missing image texture       | `WARN`   | `REVIEW_REQUIRED` |
+| Non-power-of-two texture    | `WARN`   | `REVIEW_REQUIRED` |
 
 Image texture detection looks for Image Texture nodes with assigned images in node-based materials. Procedural or custom shader setups may be intentional, so missing textures are a warning, not an error. This check does not create or modify materials, textures, or shader nodes.
+
+The power-of-two check inspects the sizes of the unique texture images used by the object's materials (the same image used in multiple materials or nodes is counted once). Images whose size cannot be read (e.g. not loaded) are skipped. The add-on never resizes or replaces textures.
 
 ---
 
@@ -178,6 +181,7 @@ These judgements are tuned for real GTA V / FiveM / MLO assets, where "textbook-
 * **Duplicate vertices are reported as a pair count.** The *Select Duplicate Vertices* tool selects the candidate vertices involved in those pairs, so the selected vertex count can differ from the reported pair count.
 * **UVs outside 0–1 are `WARN` / `REVIEW_REQUIRED`.** Tiling UVs are often intentional.
 * **Missing UV maps are `ERROR` with a `SAFE_AUTO` classification**, but no automatic fix is currently executed.
+* **Non-power-of-two texture sizes are `WARN` / `REVIEW_REQUIRED`.** This is a compatibility/performance warning, not a guaranteed export failure — some workflows intentionally use non-power-of-two textures. The add-on does not resize or replace textures automatically.
 * **High vertex count is `WARN` / `REVIEW_REQUIRED`.** The threshold (default 65,000, configurable per scene) is a warning aid, not a hard export guarantee. Meshes above it may need to be split or optimized; the add-on does not do this automatically.
 
 ---
@@ -237,7 +241,6 @@ The following are **not** implemented in the current version:
 * Collision generation
 * Room / Portal authoring tools
 * Full Sollumz export automation
-* Texture power-of-two check
 * Vertex color presence check
 * UV out-of-bounds face selection review tool
 * Face orientation overlay helper
