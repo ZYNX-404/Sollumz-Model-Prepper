@@ -4,12 +4,13 @@ Geometry Check — T-007 / T-007.1.
 Inspects mesh geometry using bmesh in read-only mode.
 No mesh modification, no bm.to_mesh(), no bpy.ops.mesh.*, no repair ops.
 
-Five sub-checks are performed:
+Six sub-checks are performed:
   A. Duplicate Vertices       — SAFE_MANUAL
   B. Open Boundary Edges      — REVIEW_REQUIRED  (link_faces == 1 → WARN)
   C. Complex Non-Manifold     — REVIEW_REQUIRED  (link_faces >= 3 → ERROR)
   D. Zero Area Faces          — SAFE_MANUAL
   E. Loose Geometry           — REVIEW_REQUIRED  (link_faces == 0)
+  F. High Vertex Count        — REVIEW_REQUIRED  (verts > threshold → WARN)
 
 T-007.1: non_manifold was split into open_boundary (WARN) and
 complex_non_manifold (ERROR) to avoid false positives on open props,
@@ -29,8 +30,12 @@ from .geometry_detection import (
 )
 from .result import CheckResult
 
+# Fallback when no scene (or scene.smp) is available; the configurable
+# value lives in SMPSceneProperties.vertex_count_warn_threshold.
+DEFAULT_VERTEX_COUNT_WARN_THRESHOLD = 65000
 
-def check_geometry(obj) -> list[CheckResult]:
+
+def check_geometry(obj, scene=None) -> list[CheckResult]:
     """
     Return a list of CheckResult entries for geometry issues found in *obj*.
 
@@ -38,8 +43,11 @@ def check_geometry(obj) -> list[CheckResult]:
     with the Review Tools.
 
     Args:
-        obj: A bpy.types.Object with a mesh data-block (obj.data).
-             The mesh is never modified.
+        obj:   A bpy.types.Object with a mesh data-block (obj.data).
+               The mesh is never modified.
+        scene: Optional bpy.types.Scene used to read the vertex count
+               warning threshold from scene.smp; falls back to
+               DEFAULT_VERTEX_COUNT_WARN_THRESHOLD when absent.
     """
     mesh = obj.data
 
@@ -49,7 +57,19 @@ def check_geometry(obj) -> list[CheckResult]:
         _check_complex_non_manifold(mesh),
         _check_zero_area_faces(mesh),
         _check_loose_geometry(mesh),
+        _check_vertex_count(mesh, _vertex_count_threshold(scene)),
     ]
+
+
+def _vertex_count_threshold(scene) -> int:
+    smp = getattr(scene, "smp", None) if scene is not None else None
+    if smp is None:
+        return DEFAULT_VERTEX_COUNT_WARN_THRESHOLD
+    return getattr(
+        smp,
+        "vertex_count_warn_threshold",
+        DEFAULT_VERTEX_COUNT_WARN_THRESHOLD,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -176,4 +196,33 @@ def _check_loose_geometry(mesh) -> CheckResult:
         check_name="Loose Geometry",
         status="OK",
         message="No loose geometry.",
+    )
+
+
+def _check_vertex_count(mesh, threshold: int) -> CheckResult:
+    vertex_count = len(mesh.vertices)
+
+    if vertex_count > threshold:
+        return CheckResult(
+            check_id="vertex_count_high",
+            check_name="High Vertex Count",
+            status="WARN",
+            message=(
+                f"Object has {vertex_count:,} vertices, above the warning threshold "
+                f"of {threshold:,}. The mesh may need to be split or optimized before export."
+            ),
+            fix_type="REVIEW_REQUIRED",
+            detail_count=vertex_count,
+        )
+
+    return CheckResult(
+        check_id="vertex_count_high",
+        check_name="Vertex Count",
+        status="OK",
+        message=(
+            f"Object has {vertex_count:,} vertices, within the warning threshold "
+            f"of {threshold:,}."
+        ),
+        fix_type="NONE",
+        detail_count=vertex_count,
     )

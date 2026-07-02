@@ -8,7 +8,7 @@ Registered checks (in order):
   1. check_transform   — scale / rotation / location
   2. check_normals     — custom normals presence
   3. check_geometry    — duplicate verts, open boundary, complex non-manifold,
-                         zero area faces, loose geometry
+                         zero area faces, loose geometry, high vertex count
   4. check_uv          — UV map presence and validity
   5. check_materials   — material slots, empty slots, names, image textures
 """
@@ -29,14 +29,22 @@ CHECK_FUNCTIONS = [
 ]
 
 
-def run_all_checks(obj) -> list[CheckResult]:
+def run_all_checks(obj, scene=None) -> list[CheckResult]:
     """
     Run all registered check functions against *obj* and return a flat list
     of CheckResult entries.
 
     Callers are responsible for ensuring *obj* is a valid MESH object.
+
+    Args:
+        scene: Optional bpy.types.Scene forwarded to checks that read
+               scene-level settings (currently only check_geometry, for the
+               vertex count warning threshold). Other checks are unaffected.
     """
     results: list[CheckResult] = []
     for fn in CHECK_FUNCTIONS:
-        results.extend(fn(obj))
+        if fn is check_geometry:
+            results.extend(fn(obj, scene=scene))
+        else:
+            results.extend(fn(obj))
     return results

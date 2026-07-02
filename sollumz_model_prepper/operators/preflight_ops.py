@@ -44,7 +44,7 @@ class SMP_OT_RunPreflight(Operator):
         has_warn = False
 
         for obj in mesh_objects:
-            for result in checks.run_all_checks(obj):
+            for result in checks.run_all_checks(obj, scene=scene):
                 add_result(
                     scene,
                     severity=result.status,

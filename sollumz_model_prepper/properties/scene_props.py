@@ -26,6 +26,12 @@ class SMPSceneProperties(PropertyGroup):
         precision=5,
         step=1,
     )
+    vertex_count_warn_threshold: IntProperty(
+        name="Vertex Count Warning",
+        description="Warn when a mesh object has more vertices than this value",
+        default=65000,
+        min=1,
+    )
     show_ok_results: BoolProperty(
         name="Show OK Results",
         description="Show OK preflight results in the result list",
