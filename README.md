@@ -65,6 +65,7 @@ Review Tools operate on the **active mesh object**. They are selection-only: eac
 | Select Complex Non-Manifold Edges | Edges shared by 3 or more faces                | No           |
 | Select Loose Geometry             | Loose vertices and loose edges                 | No           |
 | Select Duplicate Vertices         | Duplicate vertex candidates (no merging)       | No           |
+| Select UV Out-of-Bounds Faces     | Faces with UV coordinates outside the 0–1 range | No           |
 
 ---
 
@@ -179,7 +180,7 @@ These judgements are tuned for real GTA V / FiveM / MLO assets, where "textbook-
 * **Complex non-manifold edges are `ERROR` / `REVIEW_REQUIRED`.** Edges shared by 3 or more faces are much more likely to indicate genuinely broken topology.
 * **Possibly flipped normals are `WARN` / `REVIEW_REQUIRED`.** The centroid-based heuristic can produce false positives on concave, open, or interior meshes — treat the result as a hint, not a verdict.
 * **Duplicate vertices are reported as a pair count.** The *Select Duplicate Vertices* tool selects the candidate vertices involved in those pairs, so the selected vertex count can differ from the reported pair count.
-* **UVs outside 0–1 are `WARN` / `REVIEW_REQUIRED`.** Tiling UVs are often intentional.
+* **UVs outside 0–1 are `WARN` / `REVIEW_REQUIRED`.** Tiling UVs are often intentional. The *Select UV Out-of-Bounds Faces* tool selects the affected faces for review only — the add-on never normalizes, wraps, scales, or edits UVs automatically.
 * **Missing UV maps are `ERROR` with a `SAFE_AUTO` classification**, but no automatic fix is currently executed.
 * **Non-power-of-two texture sizes are `WARN` / `REVIEW_REQUIRED`.** This is a compatibility/performance warning, not a guaranteed export failure — some workflows intentionally use non-power-of-two textures. The add-on does not resize or replace textures automatically.
 * **High vertex count is `WARN` / `REVIEW_REQUIRED`.** The threshold (default 65,000, configurable per scene) is a warning aid, not a hard export guarantee. Meshes above it may need to be split or optimized; the add-on does not do this automatically.
@@ -242,7 +243,6 @@ The following are **not** implemented in the current version:
 * Room / Portal authoring tools
 * Full Sollumz export automation
 * Vertex color presence check
-* UV out-of-bounds face selection review tool
 * Face orientation overlay helper
 * Frame Selected / viewport navigation from result rows
 
