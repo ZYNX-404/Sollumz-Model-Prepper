@@ -7,6 +7,7 @@ from .review_ops import (
     SMP_OT_SelectOpenBoundaryEdges,
     SMP_OT_SelectComplexNonManifoldEdges,
 )
+from .result_ops import SMP_OT_SelectResultObject
 
 _classes = (
     SMP_OT_CreateMLOCollection,
@@ -14,6 +15,7 @@ _classes = (
     SMP_OT_SelectZeroAreaFaces,
     SMP_OT_SelectOpenBoundaryEdges,
     SMP_OT_SelectComplexNonManifoldEdges,
+    SMP_OT_SelectResultObject,
 )
 
 

@@ -4,7 +4,16 @@ from bpy.types import PropertyGroup
 
 class SMPCheckResult(PropertyGroup):
     check_id: StringProperty()
-    check_name: StringProperty()
+    check_name: StringProperty(
+        name="Check Name",
+        description="Human-readable check name",
+        default="",
+    )
+    object_name: StringProperty(
+        name="Object Name",
+        description="Name of the object this result belongs to",
+        default="",
+    )
     status: EnumProperty(
         items=[
             ("OK", "OK", ""),
@@ -23,4 +32,9 @@ class SMPCheckResult(PropertyGroup):
         ],
         default="NONE",
     )
-    detail_count: IntProperty(default=0)
+    detail_count: IntProperty(
+        name="Detail Count",
+        description="Number of detected details for this result",
+        default=0,
+        min=0,
+    )
