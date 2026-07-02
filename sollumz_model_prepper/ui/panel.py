@@ -77,11 +77,29 @@ class SMP_PT_main_panel(Panel):
             else:
                 box = layout.box()
                 for r in visible[:_MAX_RESULTS]:
+                    check_name = r.check_name or r.check_id
+                    detail_count = r.detail_count
+                    object_name = r.object_name
+
                     col = box.column(align=True)
                     row = col.row()
-                    row.label(text=f"[{r.status}] {r.check_id}", icon=_SEVERITY_ICONS.get(r.status, "DOT"))
-                    row.label(text=r.fix_type)
-                    col.label(text=r.message)
+                    row.label(text=f"[{r.status}] {check_name}", icon=_SEVERITY_ICONS.get(r.status, "DOT"))
+                    if detail_count >= 1:
+                        row.label(text=f"{r.fix_type} x{detail_count}")
+                    else:
+                        row.label(text=r.fix_type)
+                    if object_name:
+                        col.label(text=f"[{object_name}] {r.message}")
+                        select_row = col.row()
+                        select_row.alignment = 'LEFT'
+                        op = select_row.operator(
+                            "smp.select_result_object",
+                            text="Select Object",
+                            icon="RESTRICT_SELECT_OFF",
+                        )
+                        op.object_name = object_name
+                    else:
+                        col.label(text=r.message)
 
                 if visible_count > _MAX_RESULTS:
                     box.label(text=f"... and {visible_count - _MAX_RESULTS} more result(s)")

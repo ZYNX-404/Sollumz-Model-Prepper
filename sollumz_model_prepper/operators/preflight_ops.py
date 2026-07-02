@@ -52,6 +52,8 @@ class SMP_OT_RunPreflight(Operator):
                     message=result.message,
                     object_name=obj.name,
                     fix_type=result.fix_type,
+                    check_name=result.check_name,
+                    detail_count=result.detail_count,
                 )
                 if result.status == "ERROR":
                     has_error = True

@@ -56,18 +56,24 @@ def add_result(
     message: str,
     object_name: str = "",
     fix_type: str = "NONE",
+    check_name: str = "",
+    detail_count: int = 0,
 ) -> bool:
     """
     Append one check result to scene.smp.check_results.
 
     Args:
-        severity:    "OK" | "WARN" | "ERROR"  — maps to SMPCheckResult.status
-        code:        check identifier string   — maps to SMPCheckResult.check_id
-        message:     human-readable detail     — maps to SMPCheckResult.message
-                     If object_name is given it is prepended: "[ObjName] message"
-        object_name: optional source object name; embedded into message because
-                     SMPCheckResult has no dedicated object_name field.
-        fix_type:    "NONE" | "SAFE_AUTO" | "SAFE_MANUAL" | "REVIEW_REQUIRED"
+        severity:     "OK" | "WARN" | "ERROR"  — maps to SMPCheckResult.status
+        code:         check identifier string   — maps to SMPCheckResult.check_id
+        message:      human-readable detail     — stored as-is, no object-name
+                      prefix is embedded (use object_name instead)
+        object_name:  optional source object name — maps to
+                      SMPCheckResult.object_name
+        fix_type:     "NONE" | "SAFE_AUTO" | "SAFE_MANUAL" | "REVIEW_REQUIRED"
+        check_name:   human-readable check name — maps to
+                      SMPCheckResult.check_name; falls back to code when empty
+        detail_count: number of detected details — clamped to >= 0, invalid
+                      values fall back to 0
 
     Returns True on success, False if scene.smp is not available or an
     invalid enum value is supplied (prevents Blender EnumProperty exceptions).
@@ -81,14 +87,19 @@ def add_result(
     if smp is None:
         return False
 
+    try:
+        count = max(0, int(detail_count))
+    except (TypeError, ValueError):
+        count = 0
+
     item = smp.check_results.add()
     item.check_id = code
-    item.check_name = code          # display name; callers may override via direct access
+    item.check_name = check_name or code
+    item.object_name = object_name
     item.status = severity
-    item.message = f"[{object_name}] {message}" if object_name else message
+    item.message = message
     item.fix_type = fix_type
-    # item.detail_count is left at its default (0); callers that need a count
-    # should set it directly on the returned item.
+    item.detail_count = count
     return True
 
 
