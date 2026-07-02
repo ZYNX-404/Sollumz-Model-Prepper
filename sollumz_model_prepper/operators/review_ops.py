@@ -16,6 +16,7 @@ from ..checks.geometry_detection import (
     find_loose_edge_indices,
     find_duplicate_vertex_indices,
 )
+from ..checks.uv_detection import find_uv_out_of_bounds_face_indices
 
 
 class SMP_OT_SelectZeroAreaFaces(Operator):
@@ -281,5 +282,62 @@ class SMP_OT_SelectDuplicateVertices(Operator):
             self.report({'INFO'}, f"Selected {count} duplicate vertex candidate(s).")
         else:
             self.report({'INFO'}, "No duplicate vertices found.")
+
+        return {'FINISHED'}
+
+
+class SMP_OT_SelectUVOutOfBoundsFaces(Operator):
+    bl_idname = "smp.select_uv_out_of_bounds_faces"
+    bl_label = "Select UV Out-of-Bounds Faces"
+    bl_description = "Select faces with UV coordinates outside the 0-1 range on the active mesh object"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.object
+        return obj is not None and obj.type == 'MESH' and obj.data is not None
+
+    def execute(self, context):
+        obj = context.object
+        if obj is None or obj.type != 'MESH' or obj.data is None:
+            self.report({'WARNING'}, "No active mesh object.")
+            return {'CANCELLED'}
+
+        mesh = obj.data
+
+        if mesh.uv_layers.active is None:
+            self.report({'WARNING'}, "Active mesh has no UV map.")
+            return {'CANCELLED'}
+
+        # Switch to Object Mode so mesh data is accessible
+        if obj.mode != 'OBJECT':
+            bpy.ops.object.mode_set(mode='OBJECT')
+
+        # Deselect all verts/edges/faces
+        for v in mesh.vertices:
+            v.select = False
+        for e in mesh.edges:
+            e.select = False
+        for p in mesh.polygons:
+            p.select = False
+
+        # Shared detection — same condition as Preflight's uv_out_of_bounds check
+        out_indices = find_uv_out_of_bounds_face_indices(mesh)
+
+        for idx in out_indices:
+            mesh.polygons[idx].select = True
+
+        mesh.update()
+
+        count = len(out_indices)
+
+        # Set Face select mode and enter Edit Mode
+        context.tool_settings.mesh_select_mode = (False, False, True)
+        bpy.ops.object.mode_set(mode='EDIT')
+
+        if count:
+            self.report({'INFO'}, f"Selected {count} UV out-of-bounds face(s).")
+        else:
+            self.report({'INFO'}, "No UV out-of-bounds faces found.")
 
         return {'FINISHED'}

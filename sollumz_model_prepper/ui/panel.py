@@ -111,3 +111,4 @@ class SMP_PT_main_panel(Panel):
         review_box.operator("smp.select_complex_non_manifold_edges", text="Select Complex Non-Manifold Edges")
         review_box.operator("smp.select_loose_geometry", text="Select Loose Geometry")
         review_box.operator("smp.select_duplicate_vertices", text="Select Duplicate Vertices")
+        review_box.operator("smp.select_uv_out_of_bounds_faces", text="Select UV Out-of-Bounds Faces")

@@ -1,19 +1,19 @@
 """
 UV Check — T-008.
 
-Inspects UV maps using bmesh in read-only mode.
-No mesh modification, no bm.to_mesh(), no uv_layers.new(), no bpy.ops.mesh.*.
+Inspects UV maps in read-only mode.
+No mesh modification, no uv_layers.new(), no bpy.ops.mesh.*.
 
 Two sub-checks are performed:
   A. UV Map existence  — SAFE_AUTO (detection only; Fix is Post-MVP)
-  B. UV out-of-bounds  — REVIEW_REQUIRED
+  B. UV out-of-bounds  — REVIEW_REQUIRED (shared with the Review Tools
+                         via uv_detection.py; counted per face)
 
 Fix processing is Post-MVP.  This module only detects problems.
 """
 
-import bmesh
-
 from .result import CheckResult
+from .uv_detection import find_uv_out_of_bounds_face_indices
 
 
 def check_uv(obj) -> list[CheckResult]:
@@ -49,30 +49,19 @@ def check_uv(obj) -> list[CheckResult]:
     ))
 
     # --- B. UV out-of-bounds ---
-    bm = bmesh.new()
-    try:
-        bm.from_mesh(mesh)
-        bm.faces.ensure_lookup_table()
+    if mesh.uv_layers.active is None:
+        results.append(CheckResult(
+            check_id="uv_out_of_bounds",
+            check_name="UV Bounds",
+            status="OK",
+            message="No active UV layer to check.",
+            fix_type="NONE",
+        ))
+        return results
 
-        uv_layer = bm.loops.layers.uv.active
-        if uv_layer is None:
-            results.append(CheckResult(
-                check_id="uv_out_of_bounds",
-                check_name="UV Bounds",
-                status="OK",
-                message="No active UV layer to check.",
-                fix_type="NONE",
-            ))
-            return results
-
-        out_count = 0
-        for face in bm.faces:
-            for loop in face.loops:
-                u, v = loop[uv_layer].uv
-                if not (0.0 <= u <= 1.0 and 0.0 <= v <= 1.0):
-                    out_count += 1
-    finally:
-        bm.free()
+    # Shared detection — same condition as the Select UV Out-of-Bounds
+    # Faces review tool; detail_count is the out-of-bounds face count.
+    out_count = len(find_uv_out_of_bounds_face_indices(mesh))
 
     if out_count:
         results.append(CheckResult(
@@ -80,7 +69,7 @@ def check_uv(obj) -> list[CheckResult]:
             check_name="UV Out of Bounds",
             status="WARN",
             message=(
-                f"{out_count} UV point(s) are outside [0,1] range. "
+                f"{out_count} face(s) have UV coordinates outside the [0,1] range. "
                 "May be intentional tiling — review manually."
             ),
             fix_type="REVIEW_REQUIRED",
