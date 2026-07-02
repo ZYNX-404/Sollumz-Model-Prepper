@@ -122,3 +122,64 @@ class SMP_OT_SelectOpenBoundaryEdges(Operator):
             self.report({'INFO'}, "No open boundary edges found.")
 
         return {'FINISHED'}
+
+
+class SMP_OT_SelectComplexNonManifoldEdges(Operator):
+    bl_idname = "smp.select_complex_non_manifold_edges"
+    bl_label = "Select Complex Non-Manifold Edges"
+    bl_description = "Select edges connected to three or more faces on the active mesh object for manual review"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.object
+        return obj is not None and obj.type == 'MESH' and obj.data is not None
+
+    def execute(self, context):
+        obj = context.object
+        if obj is None or obj.type != 'MESH' or obj.data is None:
+            self.report({'WARNING'}, "No active mesh object.")
+            return {'CANCELLED'}
+
+        mesh = obj.data
+
+        # Switch to Object Mode so mesh edge data is accessible
+        if obj.mode != 'OBJECT':
+            bpy.ops.object.mode_set(mode='OBJECT')
+
+        # Deselect all verts/edges/faces
+        for v in mesh.vertices:
+            v.select = False
+        for e in mesh.edges:
+            e.select = False
+        for p in mesh.polygons:
+            p.select = False
+
+        # Detect complex non-manifold edges via bmesh (link_faces >= 3)
+        # Condition kept in sync with geometry_check.py complex_non_manifold judgement
+        bm = bmesh.new()
+        try:
+            bm.from_mesh(mesh)
+            bm.edges.ensure_lookup_table()
+            complex_indices = [e.index for e in bm.edges if len(e.link_faces) >= 3]
+        finally:
+            bm.free()
+
+        # Apply selection to mesh edges (bmesh is freed; no bm.to_mesh() call)
+        for idx in complex_indices:
+            mesh.edges[idx].select = True
+
+        mesh.update()
+
+        count = len(complex_indices)
+
+        # Set Edge select mode and enter Edit Mode
+        context.tool_settings.mesh_select_mode = (False, True, False)
+        bpy.ops.object.mode_set(mode='EDIT')
+
+        if count:
+            self.report({'INFO'}, f"{count} complex non-manifold edge(s) selected.")
+        else:
+            self.report({'INFO'}, "No complex non-manifold edges found.")
+
+        return {'FINISHED'}

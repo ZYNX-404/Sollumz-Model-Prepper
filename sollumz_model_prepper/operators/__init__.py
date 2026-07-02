@@ -2,13 +2,18 @@ import bpy
 
 from .collection_ops import SMP_OT_CreateMLOCollection
 from .preflight_ops import SMP_OT_RunPreflight
-from .review_ops import SMP_OT_SelectZeroAreaFaces, SMP_OT_SelectOpenBoundaryEdges
+from .review_ops import (
+    SMP_OT_SelectZeroAreaFaces,
+    SMP_OT_SelectOpenBoundaryEdges,
+    SMP_OT_SelectComplexNonManifoldEdges,
+)
 
 _classes = (
     SMP_OT_CreateMLOCollection,
     SMP_OT_RunPreflight,
     SMP_OT_SelectZeroAreaFaces,
     SMP_OT_SelectOpenBoundaryEdges,
+    SMP_OT_SelectComplexNonManifoldEdges,
 )
 
 
