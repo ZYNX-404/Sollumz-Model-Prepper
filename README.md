@@ -39,7 +39,7 @@ Existing collections are never destroyed — if the hierarchy already exists, no
 | --------- | --------------------------------------------------------------------------------------------------- |
 | Transform | Unapplied scale, non-zero Euler rotation, quaternion rotation mode, non-zero location               |
 | Normals   | Possibly inward / flipped normals (centroid heuristic)                                              |
-| Geometry  | Duplicate vertices, zero-area faces, loose geometry, open boundary edges, complex non-manifold edges |
+| Geometry  | Duplicate vertices, zero-area faces, loose geometry, open boundary edges, complex non-manifold edges, high vertex count |
 | UV        | Missing UV map, UVs outside the 0–1 range                                                           |
 | Materials | Missing material slots, empty material slots, empty material names, materials without image texture nodes |
 
@@ -142,6 +142,9 @@ Detection uses a centroid-based heuristic. It does not recalculate normals.
 | Complex non-manifold edges | `ERROR`  | `REVIEW_REQUIRED` |
 | Zero-area faces            | `WARN`   | `SAFE_MANUAL`     |
 | Loose geometry             | `WARN`   | `REVIEW_REQUIRED` |
+| High vertex count          | `WARN`   | `REVIEW_REQUIRED` |
+
+The vertex count warning threshold is configurable per scene (**Vertex Count Warning** in the panel, default 65,000). It is a warning threshold, not a hard export guarantee — meshes above it may need to be split or optimized, but the add-on never splits or optimizes meshes automatically.
 
 ### UV Check
 
@@ -175,6 +178,7 @@ These judgements are tuned for real GTA V / FiveM / MLO assets, where "textbook-
 * **Duplicate vertices are reported as a pair count.** The *Select Duplicate Vertices* tool selects the candidate vertices involved in those pairs, so the selected vertex count can differ from the reported pair count.
 * **UVs outside 0–1 are `WARN` / `REVIEW_REQUIRED`.** Tiling UVs are often intentional.
 * **Missing UV maps are `ERROR` with a `SAFE_AUTO` classification**, but no automatic fix is currently executed.
+* **High vertex count is `WARN` / `REVIEW_REQUIRED`.** The threshold (default 65,000, configurable per scene) is a warning aid, not a hard export guarantee. Meshes above it may need to be split or optimized; the add-on does not do this automatically.
 
 ---
 
@@ -233,7 +237,6 @@ The following are **not** implemented in the current version:
 * Collision generation
 * Room / Portal authoring tools
 * Full Sollumz export automation
-* Vertex count limit check
 * Texture power-of-two check
 * Vertex color presence check
 * UV out-of-bounds face selection review tool
@@ -244,6 +247,8 @@ The following are **not** implemented in the current version:
 
 ## Development Notes
 
+* An add-on preferences entry is registered as the home for add-on-level configuration (no settings are exposed there yet).
+* Scene and Object property groups are registered as `Scene.smp` and `Object.smp`, storing preflight state (results, status, timestamps) and object-level metadata.
 * Geometry detection conditions (zero-area faces, open boundary edges, complex non-manifold edges, loose geometry, duplicate vertices) are centralized in `checks/geometry_detection.py`. Both the Preflight checks and the Review Tools call the same shared helpers, so reported counts and selected review elements cannot drift apart.
 * Check functions are plain functions returning a bpy-independent `CheckResult` dataclass, so detection logic can be reasoned about (and eventually unit-tested) outside Blender.
 * A quick syntax sanity check across the add-on can be run with `python -m py_compile` on the module files.

@@ -38,6 +38,7 @@ class SMP_PT_main_panel(Panel):
             layout.label(text="Properties not registered.", icon="ERROR")
             return
 
+        layout.prop(smp, "vertex_count_warn_threshold")
         layout.operator("smp.run_preflight", icon="CHECKMARK")
 
         layout.separator()
