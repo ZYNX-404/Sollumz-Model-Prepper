@@ -29,5 +29,5 @@ class SMPSceneProperties(PropertyGroup):
     show_ok_results: BoolProperty(
         name="Show OK Results",
         description="Show OK preflight results in the result list",
-        default=True,
+        default=False,
     )
