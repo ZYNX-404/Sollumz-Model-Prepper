@@ -151,8 +151,20 @@ def _collect_unique_images(materials) -> list:
 def _check_texture_power_of_two(materials) -> CheckResult:
     # Images with no readable size (e.g. not loaded) are skipped here;
     # missing textures are material_texture_missing's responsibility.
+    images = _collect_unique_images(materials)
+
+    if not images:
+        return CheckResult(
+            check_id="texture_non_power_of_two",
+            check_name="Texture Power-of-Two",
+            status="OK",
+            message="No texture images available to check.",
+            fix_type="NONE",
+            detail_count=0,
+        )
+
     non_pot = []
-    for image in _collect_unique_images(materials):
+    for image in images:
         width, height = image.size[0], image.size[1]
         if width > 0 and height > 0 and not (_is_power_of_two(width) and _is_power_of_two(height)):
             non_pot.append((image.name, width, height))
