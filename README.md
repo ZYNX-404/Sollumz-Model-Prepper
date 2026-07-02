@@ -1,38 +1,198 @@
 # Sollumz Model Prepper
 
-A Blender add-on for preparing existing building / interior models before exporting with Sollumz.
+A Blender add-on that helps prepare and review mesh assets before using [Sollumz](https://github.com/Sollumz/Sollumz) for GTA V / FiveM / MLO workflows.
 
-**Sollumz Model Prepper** does not replace Sollumz.
-It is a small helper add-on focused on preflight checks, collection setup, and export-preparation workflows for GTA V / FiveM style MLO work.
-
-The goal is to catch common setup issues early before export.
+**Sollumz Model Prepper does not replace Sollumz.**
+It is a preflight and review helper: it inspects selected meshes for common export-preparation issues, reports them in the sidebar, and provides selection-only review tools so you can find and inspect problem areas quickly. It does not export assets and it does not automatically fix geometry.
 
 ---
 
-## Current Status
+## Status
 
-This project is currently in MVP stage.
+* Early MVP (v0.1.0), under active development
+* Preflight checks and review tools only
+* Non-destructive: no automatic fix execution of any kind
+* Does not replace Sollumz and does not run Sollumz export
 
-Implemented:
+---
 
-* MLO collection setup helper
-* Preflight check result system
-* Transform Check
-* Normal Check
-* Geometry Check
-* UV Check
-* Material Check
-* Run Preflight operator
-* Sidebar UI result display
-* Result severity summary
-* Show / hide OK results filter
+## Features
 
-Not implemented yet:
+### MLO Collection Helper
 
-* Automatic fix execution
-* Collision generation
-* Room / Portal authoring tools
-* Full Sollumz export automation
+Creates a standard MLO collection hierarchy from a name you enter:
+
+```text
+MLO_<name>
+├─ MLO_<name>_entities
+├─ MLO_<name>_collision
+└─ MLO_<name>_portals
+```
+
+Existing collections are never destroyed — if the hierarchy already exists, nothing is changed.
+
+### Preflight Checks
+
+**Run Preflight** checks all selected mesh objects. Results are stored per object and shown in the panel. If no mesh object is selected, the button is disabled.
+
+| Category  | Checks                                                                                              |
+| --------- | --------------------------------------------------------------------------------------------------- |
+| Transform | Unapplied scale, non-zero Euler rotation, quaternion rotation mode, non-zero location               |
+| Normals   | Possibly inward / flipped normals (centroid heuristic)                                              |
+| Geometry  | Duplicate vertices, zero-area faces, loose geometry, open boundary edges, complex non-manifold edges |
+| UV        | Missing UV map, UVs outside the 0–1 range                                                           |
+| Materials | Missing material slots, empty material slots, empty material names, materials without image texture nodes |
+
+All checks are read-only. They never modify mesh data, normals, UVs, materials, or transforms.
+
+### Result Review UI
+
+* **Summary**: total result count plus Errors / Warnings / OK counts, always computed from all stored results.
+* **Show OK Results** toggle: off by default so large assets show only warnings and errors. Turning it on shows OK results too. The summary counts are unaffected by the toggle.
+* **Result rows** show the status, a human-readable check name, the fix type, a detail count badge (e.g. `x144`), the source object name, and the check message.
+* **Select Object** icon button on each result row selects and activates the object that produced the result, so you can jump straight from a warning to the object and use the Review Tools on it.
+  * It does not unhide hidden objects or unlock selection-locked objects — it reports a warning and leaves them untouched.
+  * It never modifies mesh data, materials, UVs, normals, or transforms.
+
+### Review Tools
+
+Review Tools operate on the **active mesh object**. They are selection-only: each tool finds the matching elements, selects them, and enters Edit Mode with an appropriate select mode so you can inspect the result. Nothing is fixed, merged, or deleted.
+
+| Tool                              | What it selects                                | Destructive? |
+| --------------------------------- | ---------------------------------------------- | ------------ |
+| Select Zero Area Faces            | Zero-area faces                                | No           |
+| Select Open Boundary Edges        | Open boundary edges (edges with exactly 1 face) | No           |
+| Select Complex Non-Manifold Edges | Edges shared by 3 or more faces                | No           |
+| Select Loose Geometry             | Loose vertices and loose edges                 | No           |
+| Select Duplicate Vertices         | Duplicate vertex candidates (no merging)       | No           |
+
+---
+
+## Recommended Workflow
+
+1. Install the add-on.
+2. Select one or more mesh objects.
+3. Click **Run Preflight** in the Sollumz Prepper sidebar tab.
+4. Keep **Show OK Results** off for large assets.
+5. Inspect the Errors and Warnings in the result list.
+6. Click the **Select Object** button on a result row to activate the affected object.
+7. Use the **Review Tools** to select and inspect the problem elements on that object.
+8. Fix issues manually using normal Blender tools and your Sollumz workflow.
+9. Re-run Preflight to confirm.
+
+---
+
+## Preflight Status
+
+| Status | Meaning                                                                   |
+| ------ | ------------------------------------------------------------------------- |
+| `NONE` | No check has been run yet.                                                |
+| `PASS` | No warnings or errors were detected.                                      |
+| `WARN` | One or more warnings were detected, but no errors.                        |
+| `FAIL` | One or more errors were detected. Manual action is needed before export.  |
+
+## Result Severity
+
+| Severity | Meaning                                               |
+| -------- | ----------------------------------------------------- |
+| `OK`     | No issue detected.                                    |
+| `WARN`   | Something may need review, but it can be intentional. |
+| `ERROR`  | A likely export or setup issue was detected.          |
+
+## Fix Types
+
+Each result carries a fix type describing how the issue *could* be addressed. **The current version does not execute any fixes** — fix types are classification only.
+
+| Fix Type          | Meaning                                                                                      |
+| ----------------- | -------------------------------------------------------------------------------------------- |
+| `NONE`            | No fix needed, or informational.                                                             |
+| `REVIEW_REQUIRED` | The user should inspect manually. Automatic fixing is not recommended.                       |
+| `SAFE_MANUAL`     | The issue can usually be fixed manually, but the add-on does not execute fixes.              |
+| `SAFE_AUTO`       | Reserved for narrowly safe future operations. No automatic fix is currently executed.        |
+
+`uv_missing` (adding an empty UV layer) is a future `SAFE_AUTO` candidate, but it is **not** executed in the current version.
+
+---
+
+## Check Details
+
+### Transform Check
+
+| Check                    | Severity | Fix Type          |
+| ------------------------ | -------- | ----------------- |
+| Scale not applied        | `ERROR`  | `SAFE_MANUAL`     |
+| Rotation not applied     | `WARN`   | `REVIEW_REQUIRED` |
+| Quaternion rotation mode | `WARN`   | `REVIEW_REQUIRED` |
+| Non-zero location        | `WARN`   | `REVIEW_REQUIRED` |
+
+### Normal Check
+
+| Check                    | Severity | Fix Type          |
+| ------------------------ | -------- | ----------------- |
+| Possibly flipped normals | `WARN`   | `REVIEW_REQUIRED` |
+
+Detection uses a centroid-based heuristic. It does not recalculate normals.
+
+### Geometry Check
+
+| Check                      | Severity | Fix Type          |
+| -------------------------- | -------- | ----------------- |
+| Duplicate vertices         | `WARN`   | `SAFE_MANUAL`     |
+| Open boundary edges        | `WARN`   | `REVIEW_REQUIRED` |
+| Complex non-manifold edges | `ERROR`  | `REVIEW_REQUIRED` |
+| Zero-area faces            | `WARN`   | `SAFE_MANUAL`     |
+| Loose geometry             | `WARN`   | `REVIEW_REQUIRED` |
+
+### UV Check
+
+| Check               | Severity | Fix Type          |
+| ------------------- | -------- | ----------------- |
+| Missing UV map      | `ERROR`  | `SAFE_AUTO`*      |
+| UV outside `[0, 1]` | `WARN`   | `REVIEW_REQUIRED` |
+
+*Classification only — no UV layer is created automatically.
+
+### Material Check
+
+| Check                 | Severity | Fix Type          |
+| --------------------- | -------- | ----------------- |
+| No material slots     | `ERROR`  | `SAFE_MANUAL`     |
+| Empty material slots  | `WARN`   | `SAFE_MANUAL`     |
+| Empty material names  | `WARN`   | `SAFE_MANUAL`     |
+| Missing image texture | `WARN`   | `REVIEW_REQUIRED` |
+
+Image texture detection looks for Image Texture nodes with assigned images in node-based materials. Procedural or custom shader setups may be intentional, so missing textures are a warning, not an error. This check does not create or modify materials, textures, or shader nodes.
+
+---
+
+## Classification Notes
+
+These judgements are tuned for real GTA V / FiveM / MLO assets, where "textbook-clean" topology is not always the goal:
+
+* **Open boundary edges are `WARN` / `REVIEW_REQUIRED`.** Open boundaries are common in props, interiors, cards, containers, and low-detail meshes. They are not automatically considered fatal.
+* **Complex non-manifold edges are `ERROR` / `REVIEW_REQUIRED`.** Edges shared by 3 or more faces are much more likely to indicate genuinely broken topology.
+* **Possibly flipped normals are `WARN` / `REVIEW_REQUIRED`.** The centroid-based heuristic can produce false positives on concave, open, or interior meshes — treat the result as a hint, not a verdict.
+* **Duplicate vertices are reported as a pair count.** The *Select Duplicate Vertices* tool selects the candidate vertices involved in those pairs, so the selected vertex count can differ from the reported pair count.
+* **UVs outside 0–1 are `WARN` / `REVIEW_REQUIRED`.** Tiling UVs are often intentional.
+* **Missing UV maps are `ERROR` with a `SAFE_AUTO` classification**, but no automatic fix is currently executed.
+
+---
+
+## Non-Destructive Policy
+
+This add-on is currently a preflight/review helper. It:
+
+* does **not** replace Sollumz,
+* does **not** export assets,
+* does **not** automatically fix geometry,
+* does **not** merge vertices,
+* does **not** delete geometry,
+* does **not** recalculate normals,
+* does **not** edit UVs,
+* does **not** edit materials,
+* does **not** change transforms.
+
+Review Tools only change selection state, the active object, the object mode, and the mesh select mode. Some reported issues may be intentional depending on the model — always review warnings manually.
 
 ---
 
@@ -63,249 +223,30 @@ After enabling, open the 3D Viewport sidebar with `N` and select the **Sollumz P
 
 ---
 
-## Basic Usage
+## Not Implemented Yet / Roadmap
 
-### Run Preflight
+The following are **not** implemented in the current version:
 
-1. Select one or more mesh objects.
-2. Open **3D Viewport > Sidebar > Sollumz Prepper**.
-3. Click **Run Preflight**.
-4. Review the results in the panel.
-
-The operator only checks selected mesh objects.
-
-If no mesh object is selected, the button will be disabled or the operator will cancel safely.
-
----
-
-## Preflight Status
-
-The panel shows an overall status:
-
-| Status | Meaning                                                                  |
-| ------ | ------------------------------------------------------------------------ |
-| `NONE` | No check has been run yet.                                               |
-| `PASS` | No warnings or errors were detected.                                     |
-| `WARN` | One or more warnings were detected, but no errors.                       |
-| `FAIL` | One or more errors were detected. Manual action is needed before export. |
+* Automatic *Fix Safe Issues* execution
+* Apply Scale button
+* Add missing UV map button
+* Collision generation
+* Room / Portal authoring tools
+* Full Sollumz export automation
+* Vertex count limit check
+* Texture power-of-two check
+* Vertex color presence check
+* UV out-of-bounds face selection review tool
+* Face orientation overlay helper
+* Frame Selected / viewport navigation from result rows
 
 ---
 
-## Result Severity
-
-Each check result has a severity:
-
-| Severity | Meaning                                               |
-| -------- | ----------------------------------------------------- |
-| `OK`     | No issue detected.                                    |
-| `WARN`   | Something may need review, but it can be intentional. |
-| `ERROR`  | A likely export or setup issue was detected.          |
-
----
-
-## Fix Type
-
-Each result also has a fix type:
-
-| Fix Type          | Meaning                                                                                     |
-| ----------------- | ------------------------------------------------------------------------------------------- |
-| `NONE`            | No fix needed.                                                                              |
-| `SAFE_AUTO`       | Intended to be safely fixable automatically in the future. Not executed in the current MVP. |
-| `SAFE_MANUAL`     | Usually fixable, but should be reviewed and applied manually.                               |
-| `REVIEW_REQUIRED` | Requires manual review. Automatic fixing is not recommended.                                |
-
-Current MVP does not execute any fixes.
-
----
-
-## Result Filtering
-
-The Preflight panel includes a result summary and display filter.
-
-The summary shows:
-
-* `Errors`
-* `Warnings`
-* `OK`
-
-These counts are based on all stored check results.
-
-The **Show OK Results** option controls only the visible result list:
-
-| Option   | Behavior                                                      |
-| -------- | ------------------------------------------------------------- |
-| Enabled  | Shows `OK`, `WARN`, and `ERROR` results.                      |
-| Disabled | Hides `OK` results and shows only `WARN` and `ERROR` results. |
-
-This is useful for large production assets where most checks pass but a small number of warnings need review.
-
----
-
-## Checks
-
-### Transform Check
-
-Checks whether object transforms are export-ready.
-
-Detected issues:
-
-* Scale is not applied
-* Rotation is not applied
-* Object origin is not at world zero
-
-Typical results:
-
-| Check                | Severity | Fix Type          |
-| -------------------- | -------- | ----------------- |
-| Scale not applied    | `ERROR`  | `SAFE_MANUAL`     |
-| Rotation not applied | `WARN`   | `REVIEW_REQUIRED` |
-| Non-zero location    | `WARN`   | `REVIEW_REQUIRED` |
-
----
-
-### Normal Check
-
-Checks for faces that may have inward-facing normals.
-
-Because interior walls, backfaces, and open building meshes can be intentional, this check is conservative.
-
-Typical results:
-
-| Check                    | Severity | Fix Type      |
-| ------------------------ | -------- | ------------- |
-| Possibly flipped normals | `WARN`   | `SAFE_MANUAL` |
-
-This check does not automatically recalculate normals.
-
----
-
-### Geometry Check
-
-Checks for common mesh geometry issues.
-
-Detected issues:
-
-* Duplicate vertices
-* Open boundary edges
-* Complex non-manifold edges
-* Zero-area faces
-* Loose geometry
-
-Typical results:
-
-| Check                      | Severity | Fix Type          |
-| -------------------------- | -------- | ----------------- |
-| Duplicate vertices         | `WARN`   | `SAFE_MANUAL`     |
-| Open boundary edges        | `WARN`   | `REVIEW_REQUIRED` |
-| Complex non-manifold edges | `ERROR`  | `REVIEW_REQUIRED` |
-| Zero-area faces            | `WARN`   | `SAFE_MANUAL`     |
-| Loose geometry             | `WARN`   | `REVIEW_REQUIRED` |
-
-#### Open Boundary vs Complex Non-Manifold
-
-Open boundary edges are reported separately from complex non-manifold edges.
-
-Open boundary edges are edges connected to only one face.
-They are common in open props, thin surfaces, containers, shelves, interior meshes, and other game-ready assets. These are reported as `WARN` because they may be intentional.
-
-Complex non-manifold edges are edges connected to three or more faces.
-These are more likely to indicate broken topology and are reported as `ERROR`.
-
-This check is read-only and does not modify mesh data.
-
----
-
-### UV Check
-
-Checks whether the mesh has UV maps and whether active UV coordinates are within the `[0, 1]` range.
-
-Detected issues:
-
-* Missing UV map
-* UV coordinates outside `[0, 1]`
-
-Typical results:
-
-| Check               | Severity | Fix Type          |
-| ------------------- | -------- | ----------------- |
-| Missing UV map      | `ERROR`  | `SAFE_AUTO`       |
-| UV outside `[0, 1]` | `WARN`   | `REVIEW_REQUIRED` |
-
-UV tiling may be intentional, so out-of-bounds UVs are reported as warnings rather than errors.
-
-The current MVP does not create UV layers automatically.
-
----
-
-### Material Check
-
-Checks whether mesh objects have usable material assignments and image textures.
-
-Detected issues:
-
-* No material slots
-* Empty material slots
-* Empty material names
-* Materials without detected image textures
-
-Typical results:
-
-| Check                 | Severity | Fix Type          |
-| --------------------- | -------- | ----------------- |
-| No material slots     | `ERROR`  | `SAFE_MANUAL`     |
-| Empty material slots  | `WARN`   | `SAFE_MANUAL`     |
-| Empty material names  | `WARN`   | `SAFE_MANUAL`     |
-| Missing image texture | `WARN`   | `REVIEW_REQUIRED` |
-
-Image texture detection looks for Image Texture nodes with assigned images in node-based materials.
-
-Materials without detected image textures are reported as `WARN`, not `ERROR`, because procedural materials, custom shaders, or special material setups may be intentional.
-
-This check does not create materials, assign materials, create textures, or modify shader nodes.
-
----
-
-## Design Goals
-
-* Keep Sollumz as the actual export tool.
-* Provide preparation and validation before export.
-* Avoid destructive automatic edits.
-* Prefer warnings for ambiguous building / interior modeling cases.
-* Make common export mistakes visible in Blender UI.
-* Keep MVP behavior predictable and safe.
-
----
-
-## Safety Notes
-
-This add-on is currently read-only for preflight checks.
-
-The Preflight runner does not:
-
-* Modify mesh data
-* Recalculate normals
-* Add UV layers
-* Remove vertices
-* Merge geometry
-* Execute automatic fixes
-* Run Sollumz export
-
-Some results may be intentional depending on the model. Always review warnings manually.
-
----
-
-## Development Roadmap
-
-Possible future tasks:
-
-* Fix Safe Issues operator
-* Empty UV map creation for `uv_missing`
-* Material Check
-* Collision base copy workflow improvements
-* Room / Portal helper tools
-* Export checklist presets
-* Better result filtering in UI
-* Per-check enable / disable options
+## Development Notes
+
+* Geometry detection conditions (zero-area faces, open boundary edges, complex non-manifold edges, loose geometry, duplicate vertices) are centralized in `checks/geometry_detection.py`. Both the Preflight checks and the Review Tools call the same shared helpers, so reported counts and selected review elements cannot drift apart.
+* Check functions are plain functions returning a bpy-independent `CheckResult` dataclass, so detection logic can be reasoned about (and eventually unit-tested) outside Blender.
+* A quick syntax sanity check across the add-on can be run with `python -m py_compile` on the module files.
 
 ---
 
