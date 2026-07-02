@@ -66,7 +66,7 @@ def check_normals(obj) -> list[CheckResult]:
             f"{flipped} face(s) may have inward normals. "
             "Interior walls may be intentional — review manually."
         ),
-        fix_type="SAFE_MANUAL",
+        fix_type="REVIEW_REQUIRED",
         detail_count=flipped,
     )]
 
