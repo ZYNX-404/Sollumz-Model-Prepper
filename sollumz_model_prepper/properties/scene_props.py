@@ -2,6 +2,7 @@ from bpy.props import BoolProperty, CollectionProperty, EnumProperty, FloatPrope
 from bpy.types import PropertyGroup
 
 from .check_result import SMPCheckResult
+from .material_analysis import SMPMaterialAnalysisResult
 
 
 class SMPSceneProperties(PropertyGroup):
@@ -37,3 +38,6 @@ class SMPSceneProperties(PropertyGroup):
         description="Show OK preflight results in the result list",
         default=False,
     )
+    material_analysis_results: CollectionProperty(type=SMPMaterialAnalysisResult)
+    material_analysis_last_run: StringProperty(default="")
+    material_analysis_material_count: IntProperty(default=0, min=0)

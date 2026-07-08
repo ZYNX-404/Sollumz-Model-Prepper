@@ -9,8 +9,8 @@ It is a preflight and review helper: it inspects selected meshes for common expo
 
 ## Status
 
-* Early MVP (v0.1.0), under active development
-* Preflight checks and review tools only
+* Early MVP (v0.1.1), under active development
+* Preflight checks, review tools, and Material Assistant
 * Non-destructive: no automatic fix execution of any kind
 * Does not replace Sollumz and does not run Sollumz export
 
@@ -67,6 +67,24 @@ Review Tools operate on the **active mesh object**. They are selection-only: eac
 | Select Duplicate Vertices         | Duplicate vertex candidates (no merging)       | No           |
 | Select UV Out-of-Bounds Faces     | Faces with UV coordinates outside the 0–1 range | No           |
 
+### Material Assistant
+
+**Analyze Materials** inspects selected mesh objects and classifies their materials into suggested groups for Sollumz conversion. Results are stored in the scene and shown in the sidebar.
+
+| Category          | Suggested Shader     | Description                                                  |
+| ----------------- | -------------------- | ------------------------------------------------------------ |
+| `NORMAL_SPEC`     | `NORMAL_SPEC`        | Opaque material with image texture — likely safe to convert  |
+| `ALPHA`           | `NORMAL_SPEC_ALPHA`  | Transparent or blended material — review before converting   |
+| `CUTOUT`          | `NORMAL_SPEC_CUTOUT` | Alpha clip / cutout material — review before converting      |
+| `MISSING_TEXTURE` | —                    | No image texture found — assign textures before converting   |
+| `MANUAL_REVIEW`   | —                    | Ambiguous setup — inspect manually                           |
+
+For each material, the assistant shows the suggested Sollumz shader name, confidence level (`HIGH` / `MEDIUM` / `LOW`), and the reason for the classification. **These are suggestions, not guarantees.**
+
+Use the **Select** buttons next to each category or material row to highlight which objects use those materials.
+
+The Material Assistant does not create Sollumz materials, does not call Sollumz Convert operators, and does not modify nodes, textures, UVs, or materials.
+
 ---
 
 ## Recommended Workflow
@@ -80,6 +98,22 @@ Review Tools operate on the **active mesh object**. They are selection-only: eac
 7. Use the **Review Tools** to select and inspect the problem elements on that object.
 8. Fix issues manually using normal Blender tools and your Sollumz workflow.
 9. Re-run Preflight to confirm.
+
+### Material Assistant Workflow
+
+After running Preflight, use the Material Assistant to prepare for Sollumz material conversion:
+
+1. Select mesh objects.
+2. Click **Analyze Materials** in the Material Assistant section.
+3. Review the **NORMAL_SPEC / ALPHA / CUTOUT / MISSING_TEXTURE / MANUAL_REVIEW** groups in the Summary.
+4. Use the **Select** buttons to inspect which objects use each category of material.
+5. In **Sollumz Tools**, choose the appropriate shader material manually for each group.
+6. Convert only the materials you have reviewed.
+7. Re-run Preflight and Analyze Materials to confirm.
+
+> **Beginner note:** Do not press *Convert All Materials* blindly. Review the suggested groups first.
+> Opaque materials are often NORMAL_SPEC candidates. Transparent, window, glass, and cutout materials need manual review.
+> The assistant gives suggestions, not guarantees.
 
 ---
 
@@ -199,9 +233,12 @@ This add-on is currently a preflight/review helper. It:
 * does **not** recalculate normals,
 * does **not** edit UVs,
 * does **not** edit materials,
-* does **not** change transforms.
+* does **not** change transforms,
+* does **not** create Sollumz materials,
+* does **not** call Sollumz Convert operators,
+* does **not** modify nodes, textures, UVs, or materials through the Material Assistant.
 
-Review Tools only change selection state, the active object, the object mode, and the mesh select mode. Some reported issues may be intentional depending on the model — always review warnings manually.
+Review Tools and Material Assistant selection tools only change selection state, the active object, the object mode, and the mesh select mode. Some reported issues may be intentional depending on the model — always review warnings manually.
 
 ---
 
@@ -245,6 +282,9 @@ The following are **not** implemented in the current version:
 * Vertex color presence check
 * Face orientation overlay helper
 * Frame Selected / viewport navigation from result rows
+* Automatic material conversion (Material Assistant gives suggestions only)
+* Automatic Sollumz shader material creation
+* Automatic texture slot assignment
 
 ---
 

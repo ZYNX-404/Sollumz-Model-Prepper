@@ -11,6 +11,11 @@ from .review_ops import (
     SMP_OT_SelectUVOutOfBoundsFaces,
 )
 from .result_ops import SMP_OT_SelectResultObject
+from .material_assistant_ops import (
+    SMP_OT_AnalyzeMaterials,
+    SMP_OT_SelectMaterialCategoryObjects,
+    SMP_OT_SelectMaterialUsers,
+)
 
 _classes = (
     SMP_OT_CreateMLOCollection,
@@ -22,6 +27,9 @@ _classes = (
     SMP_OT_SelectDuplicateVertices,
     SMP_OT_SelectUVOutOfBoundsFaces,
     SMP_OT_SelectResultObject,
+    SMP_OT_AnalyzeMaterials,
+    SMP_OT_SelectMaterialCategoryObjects,
+    SMP_OT_SelectMaterialUsers,
 )
 
 

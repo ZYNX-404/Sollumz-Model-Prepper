@@ -17,6 +17,15 @@ _SEVERITY_ICONS = {
 }
 
 _MAX_RESULTS = 20
+_MAX_MAT_RESULTS = 20
+
+_CATEGORY_ICONS = {
+    "NORMAL_SPEC": "CHECKMARK",
+    "ALPHA": "SHADING_RENDERED",
+    "CUTOUT": "MOD_MASK",
+    "MISSING_TEXTURE": "CANCEL",
+    "MANUAL_REVIEW": "ERROR",
+}
 
 
 class SMP_PT_main_panel(Panel):
@@ -102,6 +111,80 @@ class SMP_PT_main_panel(Panel):
 
                 if visible_count > _MAX_RESULTS:
                     box.label(text=f"... and {visible_count - _MAX_RESULTS} more result(s)")
+
+        layout.separator()
+        mat_box = layout.box()
+        mat_box.label(text="Material Assistant", icon="MATERIAL")
+        mat_box.operator("smp.analyze_materials", icon="VIEWZOOM")
+
+        if smp.material_analysis_last_run:
+            mat_box.label(text=f"Last Analysis: {smp.material_analysis_last_run}")
+        else:
+            mat_box.label(text="Last Analysis: Never")
+        mat_box.label(text=f"Total Materials: {smp.material_analysis_material_count}")
+
+        mat_results = smp.material_analysis_results
+        mat_count = len(mat_results)
+
+        if mat_count == 0:
+            mat_box.label(text="No material analysis results yet.", icon="INFO")
+            mat_box.label(text="Select mesh objects and click Analyze Materials.")
+        else:
+            # Summary
+            summary_box = mat_box.box()
+            summary_box.label(text="Summary")
+            for cat in ("NORMAL_SPEC", "ALPHA", "CUTOUT", "MISSING_TEXTURE", "MANUAL_REVIEW"):
+                c = sum(1 for r in mat_results if r.category == cat)
+                if c > 0:
+                    row = summary_box.row()
+                    row.label(
+                        text=f"{cat}: {c}",
+                        icon=_CATEGORY_ICONS.get(cat, "DOT"),
+                    )
+                    op = row.operator(
+                        "smp.select_material_category_objects",
+                        text="Select",
+                        icon="RESTRICT_SELECT_OFF",
+                    )
+                    op.category = cat
+            needs_review = sum(1 for r in mat_results if r.needs_review)
+            summary_box.label(text=f"Needs Review: {needs_review}", icon="ERROR" if needs_review else "CHECKMARK")
+
+            # Guidance
+            mat_box.separator()
+            mat_box.label(text="These are suggestions only.", icon="INFO")
+            mat_box.label(text="Use Sollumz Tools to convert materials manually.")
+            mat_box.label(text="Do not press Convert All blindly.")
+
+            # Result list
+            mat_box.separator()
+            list_box = mat_box.box()
+            for r in list(mat_results)[:_MAX_MAT_RESULTS]:
+                col = list_box.column(align=True)
+                header_row = col.row()
+                header_row.label(
+                    text=f"[ {r.category} ] {r.material_name}",
+                    icon=_CATEGORY_ICONS.get(r.category, "DOT"),
+                )
+                material_name = getattr(r, "material_name", "")
+                if material_name:
+                    op = header_row.operator(
+                        "smp.select_material_users",
+                        text="",
+                        icon="RESTRICT_SELECT_OFF",
+                    )
+                    op.material_name = material_name
+                row = col.row()
+                row.label(text=f"Suggested: {r.suggested_shader or '—'}")
+                row.label(text=f"Confidence: {r.confidence}")
+                col.label(text=f"Object: {r.object_name}")
+                col.label(text=f"Reason: {r.reason}")
+                if r.image_count > 0:
+                    tex_preview = r.texture_names[:40] + ("..." if len(r.texture_names) > 40 else "")
+                    col.label(text=f"Images: {r.image_count}  {tex_preview}")
+
+            if mat_count > _MAX_MAT_RESULTS:
+                list_box.label(text=f"... and {mat_count - _MAX_MAT_RESULTS} more material(s)")
 
         layout.separator()
         review_box = layout.box()

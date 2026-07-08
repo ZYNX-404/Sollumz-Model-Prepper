@@ -2,12 +2,14 @@ import bpy
 from bpy.props import PointerProperty
 
 from .check_result import SMPCheckResult
+from .material_analysis import SMPMaterialAnalysisResult
 from .scene_props import SMPSceneProperties
 from .object_props import SMPObjectProperties
 
 
 classes = (
     SMPCheckResult,
+    SMPMaterialAnalysisResult,
     SMPSceneProperties,
     SMPObjectProperties,
 )
